@@ -19,7 +19,7 @@
     "bench": "node test/bench.js"
   },
   "dependencies": {
-    "@zxing/library": "^0.21.3",
+    "@zxing/library": "^0.23.0",
     "tesseract.js": "^5.1.1"
   },
   "devDependencies": {
