@@ -1,0 +1,62 @@
+{
+  "name": "textsnip",
+  "version": "1.4.2",
+  "description": "TextSnip - screenshot OCR",
+  "author": "TextSnip",
+  "license": "MIT",
+  "main": "main.js",
+  "homepage": "https://github.com/dangerden41k/TextSnip",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dangerden41k/TextSnip.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "fetch-assets": "node scripts/fetch-assets.js",
+    "test": "node --test test/translate.test.js test/updater.test.js test/settings.test.js test/wordfix.test.js test/format-mask.test.js test/preprocess.test.js",
+    "dist": "npm run fetch-assets && electron-builder --win portable --x64 --publish never",
+    "smoke": "node test/smoke-main.js",
+    "bench": "node test/bench.js"
+  },
+  "dependencies": {
+    "@zxing/library": "^0.21.3",
+    "tesseract.js": "^5.1.1"
+  },
+  "devDependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "electron": "^42.11.18",
+    "electron-builder": "26.18.0",
+    "html2canvas": "^1.4.1",
+    "pngjs": "^7.0.0"
+  },
+  "build": {
+    "appId": "com.dangerden41k.textsnip",
+    "productName": "TextSnip",
+    "asar": false,
+    "compression": "maximum",
+    "files": [
+      "main.js",
+      "preload.js",
+      "overlay-preload.js",
+      "src/**/*",
+      "ui/**/*",
+      "assets/**/*",
+      "tessdata/*.traineddata",
+      "!**/*.map"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "portable": {
+      "artifactName": "TextSnip.exe"
+    }
+  }
+}

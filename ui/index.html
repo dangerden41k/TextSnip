@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'">
+<title>TextSnip</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="dust"></canvas>
+
+<div id="shell">
+  <header id="top">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 24 24" aria-hidden="true"><g id="logo-g"></g></svg>
+      <span>TextSnip</span><span class="chip" id="ver">v1.0</span>
+    </div>
+    <nav id="nav">
+      <button data-view="home" class="on">Главная</button>
+      <button data-view="history">История</button>
+      <button data-view="settings">Настройки</button>
+    </nav>
+    <div class="wc">
+      <button id="wmin" aria-label="Свернуть"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>
+      <button id="wclose" aria-label="Закрыть"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button>
+    </div>
+  </header>
+
+  <div id="upd" hidden><span id="upd-text"></span><span class="upd-btns"><button id="upd-go" class="btn primary small">Обновить</button><button id="upd-later" class="btn ghost small">Позже</button></span></div>
+  <main id="stage">
+    <!-- HOME -->
+    <section class="view on" id="v-home">
+      <div class="home">
+        <div class="hero">
+          <h1>Выдели экран,<br>получи текст,<br>где ноль&nbsp;— <span class="px">ноль</span></h1>
+          <p class="lede">Распознаёт русский и английский без интернета. Путаются <b>0</b> и <b>O</b>, <b>1</b> и <b>l</b>? Здесь их различают по форме и размеру самого символа.</p>
+          <div class="cta">
+            <button id="go" class="btn primary">
+              <svg viewBox="0 0 20 20"><path d="M3 7V4h3M14 4h3v3M17 13v3h-3M6 16H3v-3"/><rect x="7" y="7" width="6" height="6" rx="1"/></svg>
+              Выделить область <span class="keys" id="k-cap"></span>
+            </button>
+            <button id="paste" class="btn ghost" type="button">Из буфера</button>
+          </div>
+          <small class="drop-hint">Или перетащи сюда картинку PNG/JPG, или нажми Ctrl+V</small>
+          <div class="stat">
+            <div><b id="s-cap">0</b><span>снимков</span></div>
+            <div><b id="s-fix">0</b><span>символов исправлено</span></div>
+          </div>
+          <div class="seg" id="seg-mode" role="group" aria-label="Режим исправления">
+            <button data-v="glyph">По форме символа</button><button data-v="raw">Как есть</button>
+          </div>
+        </div>
+
+        <aside class="card" id="result">
+          <div class="card-head">
+            <span class="dots"><i></i><i></i><i></i></span>
+            <span class="r-title">Результат</span>
+            <div class="tabs"><button data-tab="fixed" class="on">Текст</button><button data-tab="raw">Сырой OCR</button><button data-tab="tr">Перевод</button></div>
+          </div>
+          <div class="card-body">
+            <div class="ta-wrap" id="w-out"><div id="hl" aria-hidden="true"></div>
+              <textarea id="out" spellcheck="false" placeholder="Выдели область экрана — текст появится здесь"></textarea></div>
+            <textarea id="raw" spellcheck="false" readonly hidden></textarea>
+            <textarea id="tr" spellcheck="false" readonly hidden placeholder="Нажми «Перевести»"></textarea>
+          </div>
+          <div class="codes" id="codes"></div>
+          <div class="doubts" id="doubts"></div>
+          <div class="diff" id="diff"></div>
+          <div class="card-foot"><span id="r-meta">Пока пусто</span>
+            <span class="foot-btns"><button id="translate" class="btn ghost">Перевести</button><button id="copy" class="btn ghost">Копировать</button></span></div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="view" id="v-history">
+      <div class="page">
+        <div class="page-head"><h2>История</h2><button id="clear" class="btn ghost small">Очистить</button></div>
+        <input id="hsearch" class="search" type="search" placeholder="Поиск по истории" autocomplete="off" aria-label="Поиск по истории">
+        <div id="hlist"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="v-settings">
+      <div class="page">
+        <div class="page-head"><h2>Настройки</h2><span id="saved" class="saved">Сохранено</span></div>
+
+        <div class="group">
+          <h3>Горячие клавиши</h3>
+          <div class="row"><div><b>Выделить область</b><small>Работает из любого приложения</small></div><button class="hk" data-hk="hotkey"></button></div>
+          <div class="row"><div><b>Показать или спрятать окно</b><small>Если окно сейчас в фокусе — спрячет</small></div><button class="hk" data-hk="hotkeyToggle"></button></div>
+          <p class="err" id="hk-err" hidden></p>
+        </div>
+
+        <div class="group">
+          <h3>Распознавание</h3>
+          <div class="row"><div><b>Что распознаём</b><small>«Авто» сам узнаёт списки ключей вида XXXXX-XXXXX-XXXXX и включает режим кодов: только A–Z, 0–9 и дефис</small></div>
+            <div class="seg" data-seg="kind"><button data-v="auto">Авто</button><button data-v="text">Текст</button><button data-v="codes">Коды</button></div></div>
+          <div class="row"><div><b>Язык</b><small>Оба сразу — чуть медленнее</small></div>
+            <div class="seg" data-seg="langs"><button data-v="eng+rus">Рус + Eng</button><button data-v="rus">Рус</button><button data-v="eng">Eng</button></div></div>
+          <div class="row"><div><b>Цифра или буква</b><small>«По форме» сверяет ширину, высоту и контур каждого 0/O, 1/l/I, 5/S, 8/B, 2/Z. «Как есть» — чистый Tesseract</small></div>
+            <div class="seg" data-seg="mode"><button data-v="glyph">По форме символа</button><button data-v="raw">Как есть</button></div></div>
+          <div class="row"><div><b>Тип выделения</b><small>Для одной строки или колонки с кодом выбери «Строка»</small></div>
+            <div class="seg" data-seg="psm"><button data-v="6">Блок</button><button data-v="7">Строка</button><button data-v="3">Авто</button></div></div>
+          <div class="row"><div><b>Съёмка с задержкой</b><small>Чтобы успеть открыть меню или подсказку, которые пропадают при выделении</small></div>
+            <div class="seg" data-seg="captureDelay"><button data-v="0">Нет</button><button data-v="3">3 с</button><button data-v="5">5 с</button></div></div>
+          <div class="row"><div><b>Увеличение картинки</b><small>Мелкий шрифт читается лучше, но дольше</small></div>
+            <div class="range"><input type="range" min="1" max="4" step="0.5" data-key="upscale"><output id="o-up"></output></div></div>
+        </div>
+
+        <div class="group">
+          <h3>После снимка</h3>
+          <label class="row"><div><b>Сразу копировать в буфер</b></div><span class="sw"><input type="checkbox" data-key="autoCopy"><i></i></span></label>
+          <label class="row"><div><b>Показывать окно с результатом</b></div><span class="sw"><input type="checkbox" data-key="showWindow"><i></i></span></label>
+          <div class="row"><div><b>Формат текста</b><small>«В строку» и «Абзацы» склеивают перенос строк и слова с переносом. Коды и ключи не трогаются</small></div>
+            <div class="seg" data-seg="copyMode"><button data-v="keep">Как есть</button><button data-v="oneline">В строку</button><button data-v="paragraphs">Абзацы</button></div></div>
+          <label class="row"><div><b>Скрывать чувствительное</b><small>Номера карт, IBAN, почту, токены и пароли после «пароль:» — точками</small></div><span class="sw"><input type="checkbox" data-key="maskSensitive"><i></i></span></label>
+          <label class="row"><div><b>Искать QR и штрихкоды</b><small>Читаются без интернета, символы приходят точно</small></div><span class="sw"><input type="checkbox" data-key="codes"><i></i></span></label>
+          <div class="row"><div><b>Переводить на</b><small>Перевод — единственное, что отправляет текст в интернет, и только по кнопке</small></div>
+            <div class="seg" data-seg="translateTo"><button data-v="ru">Рус</button><button data-v="en">Eng</button><button data-v="uk">Укр</button><button data-v="de">Deu</button></div></div>
+          <label class="row"><div><b>Уведомление</b></div><span class="sw"><input type="checkbox" data-key="notify"><i></i></span></label>
+          <label class="row"><div><b>Текст в уведомлении</b><small>Иначе текст не попадёт в центр уведомлений Windows</small></div><span class="sw"><input type="checkbox" data-key="notifyText"><i></i></span></label>
+          <label class="row"><div><b>Хранить историю</b><small>Шифруется средствами Windows (DPAPI)</small></div><span class="sw"><input type="checkbox" data-key="saveHistory"><i></i></span></label>
+          <label class="row"><div><b>Онлайн-перевод</b><small>Текст уходит в Google Translate, при сбое — в MyMemory</small></div><span class="sw"><input type="checkbox" data-key="translateOk"><i></i></span></label>
+        </div>
+
+        <div class="group">
+          <h3>Вид</h3>
+          <label class="row"><div><b>Анимации кубиков</b></div><span class="sw"><input type="checkbox" data-key="animations"><i></i></span></label>
+          <label class="row"><div><b>Пылинки на фоне</b></div><span class="sw"><input type="checkbox" data-key="dust"><i></i></span></label>
+          <div class="row"><div><b>Акцентный цвет</b></div><div class="swatches" id="swatches"></div></div>
+        </div>
+
+        <div class="group">
+          <h3>Обновления</h3>
+          <div class="row"><div><b>Репозиторий GitHub</b><small>Вида <code>имя/репозиторий</code>. Новый релиз с файлом TextSnip.exe программа найдёт сама</small></div>
+            <input id="upd-repo" class="txt" placeholder="owner/repo" spellcheck="false"></div>
+          <label class="row"><div><b>Проверять автоматически</b><small>Каждые 10 минут и при запуске</small></div><span class="sw"><input type="checkbox" data-key="updateAuto"><i></i></span></label>
+          <div class="row"><div><b>Версия <span id="cur-ver"></span></b></div><button id="upd-check" class="btn ghost small">Проверить сейчас</button></div>
+        </div>
+
+        <div class="group">
+          <h3>Система</h3>
+          <label class="row"><div><b>Запускать вместе с Windows</b><small>Стартует свёрнутым в трей</small></div><span class="sw"><input type="checkbox" data-key="autostart"><i></i></span></label>
+          <label class="row"><div><b>Крестик сворачивает в трей</b><small>Горячие клавиши продолжают работать</small></div><span class="sw"><input type="checkbox" data-key="closeToTray"><i></i></span></label>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" role="status"></div>
+
+<div id="splash">
+  <div class="sp-in"><svg class="sp-logo" viewBox="0 0 24 24"><g id="splash-g"></g></svg><div class="sp-dots"><i></i><i></i><i></i></div></div>
+</div>
+
+<script src="vendor/html2canvas.min.js"></script>
+<script src="dust.js"></script>
+<script src="fx.js"></script>
+<script src="app.js"></script>
+</body></html>

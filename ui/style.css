@@ -1,0 +1,191 @@
+@font-face{font-family:"Inter";font-weight:100 900;font-display:block;
+  src:url(fonts/inter-cyrillic-wght-normal.woff2) format("woff2");unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:"Inter";font-weight:100 900;font-display:block;
+  src:url(fonts/inter-latin-wght-normal.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
+:root{
+  --bg:#0a090c; --card:#121116; --card2:#17161c; --line:#22212a; --line2:#2d2c37;
+  --txt:#ecebf0; --mut:#8c8a97; --dim:#5b5967;
+  --acc:#9d90ff; --acc-ink:#15121f;
+  --acc-d:#524a85; --acc-a:rgba(157,144,255,.14); --acc-s:rgba(157,144,255,.45);
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+  font:400 14px/1.45 "Inter","Segoe UI Variable","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+::selection{background:var(--acc-s)}
+::-webkit-scrollbar{width:10px}::-webkit-scrollbar-thumb{background:#24232c;border-radius:6px;border:2px solid var(--bg)}
+
+#dust{position:fixed;inset:0;z-index:0;pointer-events:none}
+#shell{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+
+/* top bar */
+#top{height:58px;flex:none;display:flex;align-items:center;gap:24px;padding:0 14px 0 28px;-webkit-app-region:drag}
+#top button{-webkit-app-region:no-drag}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:-.01em}
+.logo{width:22px;height:22px}
+.chip{padding:2px 8px;border-radius:7px;background:var(--card2);border:1px solid var(--line);color:var(--mut);font-size:11px;font-weight:500}
+#nav{margin-left:auto;display:flex;gap:4px}
+#nav button{padding:7px 14px;border-radius:10px;color:var(--mut);transition:color .2s,background .2s}
+#nav button:hover{color:var(--txt)}
+#nav button.on{color:var(--txt);background:var(--card2)}
+.wc{display:flex;gap:2px;margin-left:8px}
+.wc button{width:36px;height:30px;border-radius:8px;display:grid;place-items:center;transition:background .15s}
+.wc button:hover{background:var(--card2)}
+.wc svg{width:12px;height:12px;stroke:var(--mut);stroke-width:1.4;fill:none;stroke-linecap:round}
+#wclose:hover{background:#3a1d24}#wclose:hover svg{stroke:#ff8c9b}
+
+#stage{position:relative;flex:1;min-height:0}
+.view{position:absolute;inset:0;display:none;overflow:auto}
+.view.on{display:block}
+
+/* home */
+.home{height:100%;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);gap:44px;padding:8px 36px 34px 44px;align-items:center}
+.hero{display:flex;flex-direction:column;align-items:flex-start}
+h1{font-weight:300;font-size:clamp(38px,4.7vw,60px);line-height:1.06;letter-spacing:-.035em}
+.px{font-weight:700;color:transparent;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 2px,rgba(10,9,12,.62) 2px 3px),
+    repeating-linear-gradient(90deg,transparent 0 2px,rgba(10,9,12,.62) 2px 3px),
+    linear-gradient(var(--acc),var(--acc));
+  -webkit-background-clip:text;background-clip:text}
+.snap .px{background:none;color:var(--acc);-webkit-text-fill-color:var(--acc)}
+.lede{margin-top:22px;max-width:44ch;color:var(--mut);font-size:15px;line-height:1.55}
+.lede b{color:var(--txt);font-weight:600}
+.cta{margin-top:30px}
+.btn{display:inline-flex;align-items:center;gap:10px;border-radius:12px;font-weight:600;transition:transform .12s,box-shadow .12s,background .2s,border-color .2s}
+.btn.primary{height:54px;padding:0 20px 0 18px;background:var(--acc);color:var(--acc-ink);font-size:15px;box-shadow:0 4px 0 var(--acc-d)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--acc-d)}
+.btn.primary:active{transform:translateY(3px);box-shadow:0 1px 0 var(--acc-d)}
+.btn.primary svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.keys{display:inline-flex;gap:4px;margin-left:6px}
+kbd,.keys i{font:600 11px "Inter",sans-serif;font-style:normal;padding:3px 7px;border-radius:6px;background:rgba(10,9,12,.2);color:inherit}
+.btn.ghost{height:36px;padding:0 14px;border:1px solid var(--line2);color:var(--txt);font-weight:500}
+.btn.ghost:hover{background:var(--card2);border-color:#3a3948}
+.btn.small{height:32px;font-size:13px}
+.stat{display:flex;gap:34px;margin-top:34px}
+.stat b{display:block;font-size:30px;font-weight:300;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.stat span{color:var(--mut);font-size:12.5px}
+.seg{display:inline-flex;padding:3px;border-radius:12px;background:var(--card);border:1px solid var(--line);margin-top:30px}
+.seg button{white-space:nowrap;padding:7px 13px;border-radius:9px;color:var(--mut);font-size:13px;transition:color .2s,background .2s}
+.seg button:hover{color:var(--txt)}
+.seg button.on{background:var(--card2);color:var(--txt);box-shadow:inset 0 0 0 1px var(--line2)}
+.row .seg{margin-top:0}
+
+/* result card */
+.card{display:flex;flex-direction:column;height:min(500px,100%);border-radius:18px;background:var(--card);border:1px solid var(--line);overflow:hidden}
+.card-head{display:flex;align-items:center;gap:12px;height:48px;padding:0 12px 0 16px;border-bottom:1px solid var(--line)}
+.dots{display:flex;gap:6px}.dots i{width:9px;height:9px;border-radius:2px;background:var(--line2)}
+.dots i:first-child{background:var(--acc)}
+.r-title{font-weight:600;font-size:13px}
+.tabs{margin-left:auto;display:flex;gap:2px}
+.tabs button{padding:5px 10px;border-radius:8px;color:var(--mut);font-size:12.5px}
+.tabs button.on{background:var(--card2);color:var(--txt)}
+.card-body{flex:1;min-height:0;display:flex}
+.ta-wrap{position:relative;flex:1;min-width:0;display:flex}
+#hl{position:absolute;inset:0;padding:16px 18px;font:400 14px/1.6 "Cascadia Mono","Consolas",ui-monospace,monospace;
+  white-space:pre-wrap;overflow-wrap:anywhere;overflow:hidden;color:transparent;pointer-events:none}
+#hl mark{background:rgba(255,190,80,.3);box-shadow:0 0 0 2px rgba(255,190,80,.3);border-radius:3px;color:transparent}
+.card textarea{position:relative;z-index:1;overflow-wrap:anywhere}
+.card textarea::-webkit-scrollbar{display:none}
+.card textarea{flex:1;width:100%;resize:none;border:0;background:transparent;color:var(--txt);
+  font:400 14px/1.6 "Cascadia Mono","Consolas",ui-monospace,monospace;padding:16px 18px;outline:0}
+.card textarea::placeholder{color:var(--dim)}
+.diff{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px;min-height:0}
+.diff:not(:empty){padding:10px 16px;border-top:1px solid var(--line)}
+.diff span{padding:3px 8px;border-radius:7px;background:var(--acc-a);color:var(--acc);font:500 12px "Cascadia Mono","Consolas",monospace}
+.codes,.doubts{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px}
+.codes:not(:empty),.doubts:not(:empty){padding:10px 16px;border-top:1px solid var(--line)}
+.code{white-space:nowrap;display:flex;align-items:center;gap:8px;max-width:100%;padding:4px 6px 4px 10px;border-radius:9px;background:var(--acc-a);color:var(--acc);font-size:12.5px}
+.code span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px;font:500 12px "Cascadia Mono","Consolas",monospace}
+.code button{padding:2px 8px;border-radius:6px;color:var(--txt);background:rgba(255,255,255,.07)}
+.doubts .lbl{width:100%;color:var(--mut);font-size:12px}
+.doubt{padding:4px 10px;border-radius:9px;background:rgba(255,190,80,.12);color:#ffd08a;font:500 12px "Cascadia Mono","Consolas",monospace;transition:background .15s}
+.doubt:hover{background:rgba(255,190,80,.22)}
+.doubt b{color:#fff;background:rgba(255,190,80,.35);border-radius:3px;padding:0 2px}
+.foot-btns{display:flex;gap:8px}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px 10px 18px;border-top:1px solid var(--line);color:var(--mut);font-size:12.5px}
+
+/* pages */
+.page{max-width:760px;margin:0 auto;padding:6px 28px 48px}
+.page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+h2{font-weight:300;font-size:34px;letter-spacing:-.03em}
+.saved{color:var(--acc);font-size:12.5px;opacity:0;transition:opacity .3s}.saved.on{opacity:1}
+.group{margin-bottom:22px;border-radius:16px;background:var(--card);border:1px solid var(--line);padding:6px 18px 8px}
+.group h3{font-size:13px;font-weight:600;color:var(--mut);padding:14px 0 4px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:12px 0;border-top:1px solid var(--line);cursor:default}
+.group h3+.row,.group h3+.note+*{border-top:0}
+.row b{font-weight:500;display:block}
+.row small{display:block;color:var(--mut);font-size:12.5px;margin-top:1px}
+label.row{cursor:pointer}
+.note{color:var(--mut);font-size:12.5px;padding:0 0 10px}
+code{font:500 12px "Cascadia Mono","Consolas",monospace;padding:1px 6px;border-radius:5px;background:var(--card2)}
+.err{color:#ff8c9b;font-size:12.5px;padding:0 0 10px}
+.hk{display:inline-flex;gap:5px;padding:6px 8px;border-radius:10px;border:1px solid var(--line2);background:var(--card2);min-width:120px;justify-content:center;transition:border-color .2s}
+.hk:hover{border-color:var(--acc)}
+.hk kbd{background:#0e0d12;color:var(--txt);padding:3px 8px}
+.hk.rec{border-color:var(--acc);color:var(--acc);animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 4px var(--acc-a)}}
+.sw{position:relative;flex:none;width:42px;height:24px}
+.sw input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
+.sw i{position:absolute;inset:0;border-radius:7px;background:#25242d;transition:background .2s;pointer-events:none}
+.sw i::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:5px;background:var(--mut);transition:transform .2s,background .2s}
+.sw input:checked+i{background:var(--acc-a);box-shadow:inset 0 0 0 1px var(--acc)}
+.sw input:checked+i::after{transform:translateX(18px);background:var(--acc)}
+.sw input:focus-visible+i{outline:2px solid var(--acc);outline-offset:2px}
+.range{display:flex;align-items:center;gap:12px}
+.range output{width:38px;text-align:right;color:var(--mut);font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;width:170px;height:4px;border-radius:2px;background:var(--line2)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:4px;background:var(--acc);cursor:pointer}
+.swatches{display:flex;gap:8px}
+.swatches button{width:26px;height:26px;border-radius:7px;border:2px solid transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.swatches button.on{border-color:var(--txt)}
+.rule{display:flex;align-items:center;gap:8px;padding:5px 0}
+.rule input{flex:1;min-width:0;height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line2);background:var(--card2);color:var(--txt);font:500 13px "Cascadia Mono","Consolas",monospace}
+.rule span{color:var(--dim)}
+.rule button{width:32px;height:32px;border-radius:8px;color:var(--mut)}.rule button:hover{background:var(--card2);color:#ff8c9b}
+#add-rule{margin:6px 0 10px}
+
+/* history */
+.h-item{display:flex;gap:16px;align-items:flex-start;padding:14px 16px;margin-bottom:10px;border-radius:14px;background:var(--card);border:1px solid var(--line);transition:border-color .2s}
+.h-item:hover{border-color:var(--line2)}
+.h-time{flex:none;width:46px;color:var(--mut);font-size:12.5px;padding-top:2px;font-variant-numeric:tabular-nums}
+.h-text{flex:1;min-width:0;font:400 13px/1.55 "Cascadia Mono","Consolas",monospace;white-space:pre-wrap;word-break:break-word;max-height:4.7em;overflow:hidden;cursor:pointer}
+.h-act{display:flex;gap:4px;flex:none}
+.h-act button{padding:5px 9px;border-radius:8px;color:var(--mut);font-size:12.5px}.h-act button:hover{background:var(--card2);color:var(--txt)}
+.empty{color:var(--dim);padding:44px 0;text-align:center}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:26px;z-index:40;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  padding:11px 18px;border-radius:12px;background:var(--card2);border:1px solid var(--line2);font-weight:500;
+  display:flex;align-items:center;gap:10px;transition:opacity .25s,transform .25s}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#toast.busy::before{content:"";width:10px;height:10px;border-radius:2px;background:var(--acc);animation:spin 1s infinite}
+#toast.warn{color:#ffd08a}#toast.error{color:#ff8c9b}
+@keyframes spin{25%{transform:rotate(90deg) scale(.7)}50%{transform:rotate(180deg)}75%{transform:rotate(270deg) scale(.7)}100%{transform:rotate(360deg)}}
+
+/* splash */
+#splash{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-items:center}
+.sp-in{display:flex;flex-direction:column;align-items:center;gap:26px}
+.sp-logo{width:56px;height:56px}
+.sp-dots{display:flex;gap:7px}
+.sp-dots i{width:6px;height:6px;border-radius:2px;background:var(--acc);opacity:.25;animation:dot 1.1s infinite}
+.sp-dots i:nth-child(2){animation-delay:.18s}.sp-dots i:nth-child(3){animation-delay:.36s}
+@keyframes dot{40%{opacity:1;transform:translateY(-3px)}}
+
+@media (max-width:980px){.home{grid-template-columns:1fr;overflow:auto;align-items:start;height:auto;padding-bottom:40px}.card{height:420px}}
+[hidden]{display:none!important}
+
+#upd{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 28px 4px;padding:10px 14px 10px 18px;
+  border-radius:12px;background:var(--acc-a);border:1px solid var(--acc);color:var(--txt);font-weight:500}
+.upd-btns{display:flex;gap:8px}
+.txt{width:220px;height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line2);background:var(--card2);color:var(--txt);font:500 13px "Cascadia Mono","Consolas",monospace}
+.txt::placeholder{color:var(--dim)}
+
+/* image sources, history search */
+.cta{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.drop-hint{display:block;margin:12px 0 0;color:var(--mut);font-size:12.5px}
+.search{width:100%;height:38px;margin:0 0 14px;padding:0 12px;border:1px solid var(--line2);border-radius:10px;background:var(--card2);color:var(--txt);font:inherit}
+.search:focus{outline:2px solid var(--acc);outline-offset:1px}
