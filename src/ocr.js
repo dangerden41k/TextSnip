@@ -3,6 +3,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { createWorker } = require('tesseract.js');
+const crypto = require('crypto');
 
 const ROOT = path.join(__dirname, '..');
 let worker = null;
@@ -44,7 +45,11 @@ async function ensure(langs) {
   return worker;
 }
 
+const memo = new Map(); // sha256(buffer+opts) -> cached Tesseract data (deep-copied on hit)
 function recognize(buffer, { langs = 'eng+rus', psm = '6', whitelist = '' } = {}) {
+  const key = crypto.createHash('sha256').update(buffer).digest('hex') + `|${langs}|${psm}|${whitelist}`;
+  const hit = memo.get(key);
+  if (hit) return Promise.resolve(JSON.parse(JSON.stringify(hit)));
   const job = chain.then(async () => {
     const w = await ensure(langs);
     await w.setParameters({
@@ -54,6 +59,9 @@ function recognize(buffer, { langs = 'eng+rus', psm = '6', whitelist = '' } = {}
       tessedit_char_whitelist: whitelist,
     });
     const { data } = await w.recognize(buffer, {}, { text: true, blocks: true });
+    const copy = JSON.parse(JSON.stringify(data)); // clean copy: callers mutate symbols (glyph._pre)
+    if (memo.size > 8) memo.delete(memo.keys().next().value);
+    memo.set(key, copy);
     return data; // text + blocks (symbols with boxes, confidence)
   });
   chain = job.catch(() => {});
@@ -66,4 +74,4 @@ async function dispose() {
   if (server) server.close();
 }
 
-module.exports = { recognize, dispose };
+module.exports = { recognize, dispose, ensure };
