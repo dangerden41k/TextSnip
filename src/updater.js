@@ -110,13 +110,15 @@ function swapScript(newFile, target) {
   ].join('\r\n');
 }
 
-// Windows batch script for the installed app / first install: after the app has quit, run the release's
-// own installer silently (per-user, no admin), start the app from its install folder, clean up.
-function installScript(setupFile, appExe) {
+// Windows batch script for the installer. After the app has quit it runs the release's own installer:
+//  - silent (default, updates): per-user, no questions, installs where the app already lives, then starts it;
+//  - interactive (first install from the portable exe): the normal wizard where the user picks the folder
+//    (its last page offers to start the app), so nothing is started here.
+function installScript(setupFile, appExe, { silent = true } = {}) {
   return [
     '@echo off', 'ping 127.0.0.1 -n 3 >nul',
-    `start "" /wait ${quote(setupFile)} /S`,
-    `if exist ${quote(appExe)} start "" ${quote(appExe)}`,
+    silent ? `start "" /wait ${quote(setupFile)} /S` : `start "" /wait ${quote(setupFile)}`,
+    ...(silent ? [`if exist ${quote(appExe)} start "" ${quote(appExe)}`] : []),
     `del ${quote(setupFile)} >nul 2>&1`, '(goto) 2>nul & del "%~f0"', '',
   ].join('\r\n');
 }

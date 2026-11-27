@@ -409,7 +409,7 @@ async function installUpdate() {
   }
 }
 
-// "Install on this computer" from the portable exe: download the installer, install per-user, start the installed app.
+// "Install on this computer" from the portable exe: download the installer and open its wizard (choose folder, shortcuts).
 async function installHere() {
   if (runMode() !== 'portable' || installing) return false;
   installing = true;
@@ -419,8 +419,8 @@ async function installHere() {
     if (!r.setupUrl) return fail('В последнем релизе нет установщика');
     const dest = tempFile('TextSnip-Setup.exe');
     if (!(await fetchVerified(r.setupUrl, r.setupSha256, r.setupShaUrl, dest, 'Скачиваю установщик'))) return fail('У установщика нет контрольной суммы — установка отменена');
-    send('status', { kind: 'busy', text: 'Устанавливаю… программа перезапустится сама' });
-    runCmdScript(updater.installScript(dest, installedExe()));
+    send('status', { kind: 'busy', text: 'Открываю установщик — выбери папку и нажми «Установить»' });
+    runCmdScript(updater.installScript(dest, installedExe(), { silent: false })); // the wizard lets the user pick the folder
     quitting = true;
     app.quit();
     return true;

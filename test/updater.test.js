@@ -109,3 +109,11 @@ test('install script neutralises %VAR% and refuses quotes', () => {
   assert.match(u.installScript('C:\\a\\S.exe', 'C:\\100%\\T.exe'), /"C:\\100%%\\T\.exe"/);
   assert.throws(() => u.installScript('C:\\a"&calc&"\\S.exe', 'C:\\T.exe'), /unsafe/);
 });
+
+test('interactive install script opens the wizard: no /S and no auto-start', () => {
+  const s = u.installScript('C:\\Temp\\TextSnip-Setup.exe', 'C:\\Apps\\TextSnip\\TextSnip.exe', { silent: false });
+  assert.match(s, /start "" \/wait "C:\\Temp\\TextSnip-Setup\.exe"\r/);
+  assert.doesNotMatch(s, / \/S\b/);
+  assert.doesNotMatch(s, /if exist/);
+  assert.match(s, /del "C:\\Temp\\TextSnip-Setup\.exe"/);
+});

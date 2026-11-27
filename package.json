@@ -1,6 +1,6 @@
 {
   "name": "textsnip",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "TextSnip - screenshot OCR",
   "author": "TextSnip",
   "license": "MIT",
@@ -65,7 +65,8 @@
       "artifactName": "TextSnip.exe"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
       "perMachine": false,
       "allowElevation": false,
       "runAfterFinish": true,

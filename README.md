@@ -5,10 +5,10 @@ Everything runs locally; the only network features are the update check and the 
 
 ## Install
 
-Download **TextSnip-Setup.exe** from the latest release and run it: one click, no admin rights. It installs to
-`%LOCALAPPDATA%\Programs\TextSnip`, adds Desktop and Start menu shortcuts and an uninstaller (Settings -> Apps).
-Settings and history are kept. Updates are installed silently from inside the app (SHA-256 checked).
-`TextSnip.exe` is the portable build; it can install itself (Settings -> "Install on this computer").
+Download **TextSnip-Setup.exe** from the latest release and run it. The wizard asks where to install (default
+`%LOCALAPPDATA%\Programs\TextSnip`, no admin rights needed), adds Desktop and Start menu shortcuts and an uninstaller
+(Settings -> Apps). Settings and history are kept. Updates are installed silently, into the folder you chose (SHA-256 checked).
+`TextSnip.exe` is the portable build; it can open the installer itself (Settings -> "Install on this computer").
 Windows SmartScreen may warn because the files are not code-signed: "More info" -> "Run anyway".
 
 ## Recognition
