@@ -13,3 +13,5 @@
   legacy non-LSTM tesseract.js cores removed (OEM 1 uses LSTM cores only).
 
 No behavior changes to recognition logic; glyph judge, wordfix and updater untouched.
+- chore(app): update auto-check interval 10 min -> 1 hour (and the settings label),
+  so the app never competes for the unauthenticated GitHub API rate limit.
