@@ -36,7 +36,13 @@ function parse(data, repo, page) {
   const exe = assets.find((a) => own(a) && /^TextSnip\.exe$/i.test(a.name));
   const sum = assets.find((a) => own(a) && /^TextSnip\.exe\.sha256$/i.test(a.name));
   const digest = exe && /^sha256:([a-f0-9]{64})$/i.exec(String(exe.digest || '')); // GitHub computes this for every asset
+  const setup = assets.find((a) => own(a) && /^TextSnip-Setup\.exe$/i.test(a.name));
+  const setupSum = assets.find((a) => own(a) && /^TextSnip-Setup\.exe\.sha256$/i.test(a.name));
+  const setupDigest = setup && /^sha256:([a-f0-9]{64})$/i.exec(String(setup.digest || ''));
   return {
+    setupUrl: setup ? setup.browser_download_url : '',
+    setupSha256: setupDigest ? setupDigest[1].toLowerCase() : '',
+    setupShaUrl: setupSum ? setupSum.browser_download_url : '',
     version: String(data.tag_name || '').replace(/^v/i, ''),
     url: exe ? exe.browser_download_url : '',
     sha256: digest ? digest[1].toLowerCase() : '',
@@ -89,18 +95,30 @@ async function download(url, dest, { sha256, onProgress, fetchFn = fetch } = {})
   if (head.toString() !== 'MZ' || fs.statSync(dest).size < 5 * 1024 * 1024) bad('downloaded file is not a valid exe');
 }
 
-// Windows batch script: wait until the running exe is free, swap files, start the new version.
+const quote = (p) => {
+  if (/["\r\n]/.test(p)) throw new Error('unsafe path');
+  return `"${p.replace(/%/g, '%%')}"`; // %VAR% would be expanded by cmd inside the script
+};
+
+// Windows batch script for the portable exe: wait until it is free, swap files, start the new version.
 function swapScript(newFile, target) {
-  const q = (p) => {
-    if (/["\r\n]/.test(p)) throw new Error('unsafe path');
-    return `"${p.replace(/%/g, '%%')}"`; // %VAR% would be expanded by cmd inside the script
-  };
   return [
     '@echo off', 'set tries=0', ':wait', 'ping 127.0.0.1 -n 2 >nul', 'set /a tries+=1',
-    `move /Y ${q(newFile)} ${q(target)} >nul 2>&1`,
+    `move /Y ${quote(newFile)} ${quote(target)} >nul 2>&1`,
     'if errorlevel 1 ( if %tries% LSS 60 goto wait )',
-    `start "" ${q(target)}`, '(goto) 2>nul & del "%~f0"', '',
+    `start "" ${quote(target)}`, '(goto) 2>nul & del "%~f0"', '',
   ].join('\r\n');
 }
 
-module.exports = { cmp, endpoint, parse, check, fetchSha, download, swapScript, trustedUrl };
+// Windows batch script for the installed app / first install: after the app has quit, run the release's
+// own installer silently (per-user, no admin), start the app from its install folder, clean up.
+function installScript(setupFile, appExe) {
+  return [
+    '@echo off', 'ping 127.0.0.1 -n 3 >nul',
+    `start "" /wait ${quote(setupFile)} /S`,
+    `if exist ${quote(appExe)} start "" ${quote(appExe)}`,
+    `del ${quote(setupFile)} >nul 2>&1`, '(goto) 2>nul & del "%~f0"', '',
+  ].join('\r\n');
+}
+
+module.exports = { cmp, endpoint, parse, check, fetchSha, download, swapScript, installScript, trustedUrl };

@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
   translate: (text) => ipcRenderer.invoke('translate:run', text),
   checkUpdate: () => ipcRenderer.send('update:check'),
   installUpdate: () => ipcRenderer.send('update:install'),
+  installHere: () => ipcRenderer.invoke('app:install-here'),
   version: () => ipcRenderer.invoke('state:get').then((st) => st.version),
   copy: (text) => ipcRenderer.send('clipboard:write', text),
   deleteHistory: (id) => ipcRenderer.invoke('history:delete', id),

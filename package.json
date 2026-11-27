@@ -1,6 +1,6 @@
 {
   "name": "textsnip",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "TextSnip - screenshot OCR",
   "author": "TextSnip",
   "license": "MIT",
@@ -14,7 +14,7 @@
     "start": "electron .",
     "fetch-assets": "node scripts/fetch-assets.js",
     "test": "node --test test/translate.test.js test/updater.test.js test/settings.test.js test/wordfix.test.js test/format-mask.test.js test/preprocess.test.js",
-    "dist": "npm run fetch-assets && electron-builder --win portable --x64 --publish never",
+    "dist": "npm run fetch-assets && electron-builder --win --x64 --publish never",
     "smoke": "node test/smoke-main.js",
     "bench": "node test/bench.js"
   },
@@ -51,12 +51,30 @@
           "arch": [
             "x64"
           ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/icon.ico"
     },
     "portable": {
       "artifactName": "TextSnip.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TextSnip",
+      "deleteAppDataOnUninstall": false,
+      "language": "1049",
+      "artifactName": "TextSnip-Setup.${ext}"
     }
   }
 }

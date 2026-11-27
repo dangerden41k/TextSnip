@@ -271,6 +271,8 @@
     const st = await api.state();
     S = st.settings; hist = st.history; stats = st.stats;
     $('#ver').textContent = 'v' + st.version; $('#cur-ver').textContent = st.version;
+    $('#install-row').hidden = st.mode !== 'portable'; // only the portable exe offers to install itself
+    $('#install-here').addEventListener('click', () => { $('#install-here').disabled = true; api.installHere().then((ok) => { if (!ok) $('#install-here').disabled = false; }); });
     applyLook(); bindSettings(); bindHistory(); renderSettings(); renderHome(); renderHistory();
 
     $$('#nav button').forEach((b) => b.addEventListener('click', () => switchView(b.dataset.view)));

@@ -14,6 +14,8 @@ const release = (extra = {}) => ({
     { name: 'notes.txt', browser_download_url: `${REL}notes.txt` },
     { name: 'TextSnip.exe', browser_download_url: `${REL}TextSnip.exe`, digest: `sha256:${SHA}` },
     { name: 'TextSnip.exe.sha256', browser_download_url: `${REL}TextSnip.exe.sha256` },
+    { name: 'TextSnip-Setup.exe', browser_download_url: `${REL}TextSnip-Setup.exe`, digest: `sha256:${'b'.repeat(64)}` },
+    { name: 'TextSnip-Setup.exe.sha256', browser_download_url: `${REL}TextSnip-Setup.exe.sha256` },
   ], ...extra,
 });
 const fakeApi = (data) => async () => ({ ok: true, json: async () => data });
@@ -83,4 +85,27 @@ test('fetchSha reads the digest and refuses junk', async () => {
   assert.equal(await u.fetchSha(`${REL}TextSnip.exe.sha256`, mk(`${SHA}  TextSnip.exe\n`)), SHA);
   await assert.rejects(u.fetchSha(`${REL}TextSnip.exe.sha256`, mk('<html>')), /bad checksum/);
   await assert.rejects(u.fetchSha('https://evil.example/x', mk(SHA)), /untrusted/);
+});
+
+test('the installer asset is parsed next to the portable exe', async () => {
+  const r = await u.check('me/textsnip', '1.2.0', fakeApi(release()));
+  assert.equal(r.setupUrl, `${REL}TextSnip-Setup.exe`);
+  assert.equal(r.setupSha256, 'b'.repeat(64));
+  assert.equal(r.setupShaUrl, `${REL}TextSnip-Setup.exe.sha256`);
+  assert.equal(r.url, `${REL}TextSnip.exe`); // the portable exe is still offered for 1.4.x installs
+});
+test('an installer from another repo is ignored', async () => {
+  const evil = release({ assets: [{ name: 'TextSnip-Setup.exe', browser_download_url: 'https://github.com/other/repo/releases/download/v9/TextSnip-Setup.exe' }] });
+  assert.equal((await u.check('me/textsnip', '1.0.0', fakeApi(evil))).setupUrl, '');
+});
+test('install script: wait, silent install, start the app, clean up', () => {
+  const s = u.installScript('C:\\Temp\\TextSnip-Setup.exe', 'C:\\Users\\Me\\AppData\\Local\\Programs\\TextSnip\\TextSnip.exe');
+  assert.match(s, /start "" \/wait "C:\\Temp\\TextSnip-Setup\.exe" \/S/);
+  assert.match(s, /if exist "C:\\Users\\Me\\AppData\\Local\\Programs\\TextSnip\\TextSnip\.exe" start "" /);
+  assert.match(s, /del "C:\\Temp\\TextSnip-Setup\.exe"/);
+  assert.match(s, /del "%~f0"/);
+});
+test('install script neutralises %VAR% and refuses quotes', () => {
+  assert.match(u.installScript('C:\\a\\S.exe', 'C:\\100%\\T.exe'), /"C:\\100%%\\T\.exe"/);
+  assert.throws(() => u.installScript('C:\\a"&calc&"\\S.exe', 'C:\\T.exe'), /unsafe/);
 });

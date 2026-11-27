@@ -2,7 +2,8 @@ name: Release
 
 # Push a tag like v1.4.1 -> builds the portable TextSnip.exe and publishes a GitHub Release.
 # The app's built-in updater reads the latest Release, downloads the asset named TextSnip.exe and
-# refuses to install it unless its SHA-256 matches (GitHub's asset digest or TextSnip.exe.sha256).
+# refuses to install it unless its SHA-256 matches (GitHub's asset digest or the .sha256 file).
+# Two files are published: TextSnip-Setup.exe (installer, per-user, silent updates) and TextSnip.exe (portable).
 on:
   push:
     tags: ['v*']
@@ -37,18 +38,22 @@ jobs:
       - run: npm test
       - run: npm run dist
 
-      - name: Sanity check the exe
+      - name: Sanity check the exe and the installer
         shell: bash
         run: |
-          test -f dist/TextSnip.exe
-          size=$(stat -c %s dist/TextSnip.exe)
-          echo "TextSnip.exe = $size bytes"
-          test "$size" -gt 50000000
-          head -c 2 dist/TextSnip.exe | grep -q MZ
+          for f in dist/TextSnip.exe dist/TextSnip-Setup.exe; do
+            test -f "$f"
+            size=$(stat -c %s "$f")
+            echo "$f = $size bytes"
+            test "$size" -gt 50000000
+            head -c 2 "$f" | grep -q MZ
+          done
 
-      - name: Checksum
+      - name: Checksums
         shell: bash
-        run: sha256sum dist/TextSnip.exe | cut -d' ' -f1 > dist/TextSnip.exe.sha256
+        run: |
+          cd dist
+          for f in TextSnip.exe TextSnip-Setup.exe; do sha256sum "$f" | cut -d' ' -f1 > "$f.sha256"; done
 
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -56,7 +61,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/TextSnip.exe dist/TextSnip.exe.sha256 \
+          gh release create "$GITHUB_REF_NAME" \
+            dist/TextSnip-Setup.exe dist/TextSnip-Setup.exe.sha256 dist/TextSnip.exe dist/TextSnip.exe.sha256 \
             --title "TextSnip ${GITHUB_REF_NAME#v}" \
             --generate-notes
 
@@ -68,3 +74,5 @@ jobs:
           path: |
             dist/TextSnip.exe
             dist/TextSnip.exe.sha256
+            dist/TextSnip-Setup.exe
+            dist/TextSnip-Setup.exe.sha256

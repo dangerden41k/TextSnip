@@ -3,6 +3,14 @@
 Screenshot-to-text for Windows. Select an area, get the text (Russian + English, QR and barcodes).
 Everything runs locally; the only network features are the update check and the optional online translation.
 
+## Install
+
+Download **TextSnip-Setup.exe** from the latest release and run it: one click, no admin rights. It installs to
+`%LOCALAPPDATA%\Programs\TextSnip`, adds Desktop and Start menu shortcuts and an uninstaller (Settings -> Apps).
+Settings and history are kept. Updates are installed silently from inside the app (SHA-256 checked).
+`TextSnip.exe` is the portable build; it can install itself (Settings -> "Install on this computer").
+Windows SmartScreen may warn because the files are not code-signed: "More info" -> "Run anyway".
+
 ## Recognition
 
 - The image is normalised before OCR (flat margins and dark photo frames removed, polarity fixed, scale adapted to the glyph size) and re-read as other variants when the first result is weak; key lists are read several times and voted per character.
@@ -21,8 +29,8 @@ Everything runs locally; the only network features are the update check and the 
 ## Releases and auto-update
 
 1. Bump `version` in `package.json` and commit.
-2. Push a tag that matches it: `git tag v1.4.2 && git push origin v1.4.2`.
-3. The **Release** workflow builds `TextSnip.exe`, publishes it with `TextSnip.exe.sha256`, and the app offers the update.
+2. Push a tag that matches it: `git tag v1.5.0 && git push origin v1.5.0`.
+3. The **Release** workflow builds `TextSnip-Setup.exe` and `TextSnip.exe`, publishes them with their `.sha256` files, and the app offers the update.
 
-The app installs an update only from a GitHub release of the configured `owner/repo` and only after the SHA-256 of the downloaded file matches.
+The app installs an update only from a GitHub release of the configured `owner/repo` (the installed app runs `TextSnip-Setup.exe /S`, the portable one swaps `TextSnip.exe`) and only after the SHA-256 of the downloaded file matches.
 To protect users from a compromised account: enable 2FA, protect `v*` tags in repository rules, and ideally code-sign the exe.

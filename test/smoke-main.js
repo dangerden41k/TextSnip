@@ -52,6 +52,8 @@ setTimeout(async () => {
   const st = await handlers['state:get'](me);
   ok(st.settings.updateRepo !== 'https://evil.example/x.json' && !('evil' in st.settings), 'settings.json is sanitised on load');
   ok(!fs.existsSync(path.join(ud, 'history.json')) && fs.existsSync(path.join(ud, 'history.bin')) && !fs.readFileSync(path.join(ud, 'history.bin')).toString().includes('secret-password'), 'legacy history migrated to encrypted history.bin');
+  ok(st.mode === 'dev', 'run mode is detected (dev here; portable / installed in the real app): ' + st.mode);
+  ok((await handlers['app:install-here'](me)) === false && (await handlers['app:install-here'](stranger)) === false, 'install-here is refused outside the portable exe and for foreign senders');
   ok((await handlers['state:get'](stranger)) === null && (await handlers['ocr:image'](stranger, fx('code-plate.png'))) === false, 'foreign senders are refused (state, ocr:image)');
   ok((await handlers['ocr:image'](me, new Uint8Array(0))) === false && (await handlers['ocr:image'](me, 'text')) === false, 'empty / non-binary image data is refused');
 

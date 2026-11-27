@@ -116,7 +116,8 @@ function applySettings(patch) {
   }
   writeJson('settings.json', settings);
   if (prev.saveHistory && !settings.saveHistory) { history = []; persistHistory(history); send('history', history); }
-  app.setLoginItemSettings({ openAtLogin: !!settings.autostart, args: ['--hidden'] });
+  // the portable exe unpacks itself to a temp folder: autostart must point at the file the user runs
+  app.setLoginItemSettings({ openAtLogin: !!settings.autostart, path: process.env.PORTABLE_EXECUTABLE_FILE || process.execPath, args: ['--hidden'] });
   scheduleUpdates();
   send('settings', settings);
   return { settings, errors };
@@ -326,7 +327,8 @@ async function runOcr(dataURL) {
 
 
 // ---------- updates ----------
-let updateInfo = null, updateTimer = null, installing = false;
+let updateInfo = null, updateTimer = null, installing = false, lastRelease = null;
+const runMode = () => (process.env.PORTABLE_EXECUTABLE_FILE ? 'portable' : app.isPackaged ? 'installed' : 'dev');
 
 async function checkUpdate(manual) {
   if (!settings.updateRepo) {
@@ -335,6 +337,7 @@ async function checkUpdate(manual) {
   }
   try {
     const r = await updater.check(settings.updateRepo, app.getVersion());
+    lastRelease = r;
     if (r.newer) {
       const fresh = !updateInfo || updateInfo.version !== r.version;
       updateInfo = r;
@@ -358,39 +361,71 @@ function scheduleUpdates() {
 
 const openSafe = (u) => { if (updater.trustedUrl(u)) shell.openExternal(u); };
 
+// Downloads a release asset and verifies its SHA-256 (GitHub's digest or the .sha256 asset). false = no checksum known.
+async function fetchVerified(url, sha256, shaUrl, dest, label) {
+  const sha = sha256 || (shaUrl ? await updater.fetchSha(shaUrl) : '');
+  if (!sha) return false;
+  let last = -1;
+  await updater.download(url, dest, {
+    sha256: sha,
+    onProgress: (p) => { const pct = Math.floor(p * 100); if (pct !== last) { last = pct; send('status', { kind: 'busy', text: `${label}… ${pct}%` }); } },
+  });
+  return true;
+}
+function runCmdScript(text) { // detached batch file that outlives this process
+  const script = path.join(fs.mkdtempSync(path.join(app.getPath('temp'), 'textsnip-')), 'run.cmd');
+  fs.writeFileSync(script, text);
+  require('child_process').spawn('cmd.exe', ['/d', '/s', '/c', `"${script}"`], { detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true }).unref();
+}
+const tempFile = (name) => path.join(fs.mkdtempSync(path.join(app.getPath('temp'), 'textsnip-dl-')), name);
+const installedExe = () => path.join(process.env.LOCALAPPDATA || '', 'Programs', 'TextSnip', 'TextSnip.exe');
+
 async function installUpdate() {
   if (!updateInfo || installing) return;
-  const target = process.env.PORTABLE_EXECUTABLE_FILE; // set by the single-file exe
-  if (!target || !updateInfo.url) { openSafe(updateInfo.page); return; }
+  const info = updateInfo, mode = runMode();
+  if (mode === 'dev') { openSafe(info.page); return; }
+  const noSum = () => { installing = false; send('status', { kind: 'warn', text: 'У релиза нет контрольной суммы — скачай обновление вручную со страницы релиза' }); openSafe(info.page); };
   installing = true;
   try {
-    // never run a downloaded exe whose SHA-256 we cannot check
-    const sha = updateInfo.sha256 || (updateInfo.shaUrl ? await updater.fetchSha(updateInfo.shaUrl) : '');
-    if (!sha) {
-      installing = false;
-      send('status', { kind: 'warn', text: 'У релиза нет контрольной суммы — скачай обновление вручную со страницы релиза' });
-      openSafe(updateInfo.page);
-      return;
+    if (mode === 'portable') { // replace the single exe in place
+      const target = process.env.PORTABLE_EXECUTABLE_FILE;
+      if (!target || !info.url) { installing = false; openSafe(info.page); return; }
+      const dest = path.join(path.dirname(target), 'TextSnip.update.exe');
+      try { fs.unlinkSync(dest); } catch { /* none left over */ }
+      if (!(await fetchVerified(info.url, info.sha256, info.shaUrl, dest, 'Скачиваю обновление'))) { noSum(); return; }
+      runCmdScript(updater.swapScript(dest, target));
+    } else { // installed: run the release's installer silently over the current installation
+      if (!info.setupUrl) { installing = false; openSafe(info.page); return; }
+      const dest = tempFile('TextSnip-Setup.exe');
+      if (!(await fetchVerified(info.setupUrl, info.setupSha256, info.setupShaUrl, dest, 'Скачиваю обновление'))) { noSum(); return; }
+      runCmdScript(updater.installScript(dest, process.execPath));
     }
-    const dest = path.join(path.dirname(target), 'TextSnip.update.exe');
-    try { fs.unlinkSync(dest); } catch { /* none left over */ }
-    let last = -1;
-    await updater.download(updateInfo.url, dest, {
-      sha256: sha,
-      onProgress: (p) => {
-        const pct = Math.floor(p * 100);
-        if (pct !== last) { last = pct; send('status', { kind: 'busy', text: `Скачиваю обновление… ${pct}%` }); }
-      },
-    });
-    const script = path.join(fs.mkdtempSync(path.join(app.getPath('temp'), 'textsnip-')), 'update.cmd');
-    fs.writeFileSync(script, updater.swapScript(dest, target));
-    require('child_process').spawn('cmd.exe', ['/c', script], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
     quitting = true;
     app.quit();
   } catch (e) {
     installing = false;
     send('status', { kind: 'error', text: 'Не удалось скачать или проверить обновление — открою страницу релиза' });
-    openSafe(updateInfo.page);
+    openSafe(info.page);
+  }
+}
+
+// "Install on this computer" from the portable exe: download the installer, install per-user, start the installed app.
+async function installHere() {
+  if (runMode() !== 'portable' || installing) return false;
+  installing = true;
+  const fail = (text) => { installing = false; send('status', { kind: 'error', text }); return false; };
+  try {
+    const r = lastRelease || await updater.check(settings.updateRepo || DEFAULTS.updateRepo, app.getVersion());
+    if (!r.setupUrl) return fail('В последнем релизе нет установщика');
+    const dest = tempFile('TextSnip-Setup.exe');
+    if (!(await fetchVerified(r.setupUrl, r.setupSha256, r.setupShaUrl, dest, 'Скачиваю установщик'))) return fail('У установщика нет контрольной суммы — установка отменена');
+    send('status', { kind: 'busy', text: 'Устанавливаю… программа перезапустится сама' });
+    runCmdScript(updater.installScript(dest, installedExe()));
+    quitting = true;
+    app.quit();
+    return true;
+  } catch (e) {
+    return fail('Не удалось скачать или проверить установщик');
   }
 }
 
@@ -399,7 +434,8 @@ async function installUpdate() {
 const trusted = (e) => !!win && !win.isDestroyed() && e.sender === win.webContents;
 const overlayOf = (e) => [...overlays.values()].find((o) => !o.win.isDestroyed() && o.win.webContents === e.sender);
 
-ipcMain.handle('state:get', (e) => (trusted(e) ? { settings, history, stats, version: app.getVersion() } : null));
+ipcMain.handle('state:get', (e) => (trusted(e) ? { settings, history, stats, version: app.getVersion(), mode: runMode() } : null));
+ipcMain.handle('app:install-here', (e) => (trusted(e) ? installHere() : false));
 ipcMain.handle('settings:set', (e, patch) => (trusted(e) ? applySettings(patch) : null));
 ipcMain.on('hotkeys:pause', (e, on) => { if (!trusted(e)) return; if (on) globalShortcut.unregisterAll(); else registerHotkeys(); });
 ipcMain.on('capture:start', (e) => { if (trusted(e)) startCaptureDelayed(); });
