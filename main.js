@@ -504,6 +504,7 @@ app.whenReady().then(() => {
   history = settings.saveHistory ? loadHistory() : [];
   if (!settings.saveHistory) persistHistory(history);
   stats = { captures: 0, fixed: 0, ...readJson('stats.json', {}) };
+  ocr.ensure(settings.langs).catch(() => {}); // warm the OCR worker + language data before the first snip
   createWindow(process.argv.includes('--hidden'));
   createTray();
   syncOverlays();
