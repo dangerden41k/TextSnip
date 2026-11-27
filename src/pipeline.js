@@ -103,6 +103,8 @@ async function recheck(ls, bboxes, shape, gray, W, H, recognize, opts) {
     const b = bboxes[i], lh = b.y1 - b.y0;
     const x0 = Math.max(0, b.x0 - lh), x1 = Math.min(W, b.x1 + lh), y0 = Math.max(0, b.y0 - Math.round(lh * 0.4)), y1 = Math.min(H, b.y1 + Math.round(lh * 0.4));
     const votes = new Map();
+    let settled = null;
+    outer:
     for (const f of [0.8, 1, 1.33]) {
       const c0 = crop(gray, W, x0, y0, x1, y1, 0);
       const nw = Math.round(c0.w * f), nh = Math.round(c0.h * f);
@@ -114,10 +116,13 @@ async function recheck(ls, bboxes, shape, gray, W, H, recognize, opts) {
         let t = data.text.trim().split('\n')[0] || '';
         const r = glyph.refine(data, padded.gray, padded.w, padded.h, { codes: true });
         if (r.aligned) t = r.text.trim().split('\n')[0] || t;
-        if (shapeOf(t) === shape) votes.set(t, (votes.get(t) || 0) + 1);
+        if (shapeOf(t) === shape) {
+          votes.set(t, (votes.get(t) || 0) + 1);
+          if ((votes.get(t) || 0) >= 2) { settled = t; break outer; } // 2 matching reads: enough
+        }
       }
     }
-    if (votes.size) fixed[i] = [...votes].sort((a, b) => b[1] - a[1])[0][0];
+    fixed[i] = settled || (votes.size ? [...votes].sort((a, b) => b[1] - a[1])[0][0] : ls[i]);
   }
   return fixed;
 }
