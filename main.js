@@ -356,7 +356,7 @@ async function checkUpdate(manual) {
 
 function scheduleUpdates() {
   clearInterval(updateTimer);
-  if (settings.updateAuto && settings.updateRepo) updateTimer = setInterval(() => checkUpdate(false), 10 * 60 * 1000);
+  if (settings.updateAuto && settings.updateRepo) updateTimer = setInterval(() => checkUpdate(false), 60 * 60 * 1000); // hourly: stay far from the unauthenticated 60 req/hour API limit
 }
 
 const openSafe = (u) => { if (updater.trustedUrl(u)) shell.openExternal(u); };
